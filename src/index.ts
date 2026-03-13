@@ -18,12 +18,19 @@ import { readBarekeyValue, readBarekeyValues } from "./cache.js";
 
 export type BarekeyReactClient = PublicBarekeyClient;
 
-export type BarekeyReactEnv = {
-  get<TKey extends BarekeyPublicKey>(name: TKey, options?: BarekeyGetOptions): BarekeyPublicValueForKey<TKey>;
-  get<const TKeys extends readonly BarekeyPublicKey[]>(
+export type BarekeyReactGet = {
+  <TKey extends BarekeyPublicKey>(
+    name: TKey,
+    options?: BarekeyGetOptions,
+  ): BarekeyPublicValueForKey<TKey>;
+  <const TKeys extends readonly BarekeyPublicKey[]>(
     names: TKeys,
     options?: BarekeyGetOptions,
   ): BarekeyPublicValuesForKeys<TKeys>;
+};
+
+export type BarekeyReactEnv = {
+  get: BarekeyReactGet;
 };
 
 export type BarekeyProviderProps = {
@@ -44,21 +51,32 @@ export function BarekeyProvider(props: BarekeyProviderProps): ReactElement {
   });
 }
 
-export function useBarekey(): BarekeyReactEnv {
+export function useBarekey() {
   const client = useContext(BarekeyContext);
   if (client === null) {
     throw new Error(
       "[barekey/react] useBarekey() must be used within <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
     );
   }
+  const runtimeClient = client;
+
+  function get<TKey extends BarekeyPublicKey>(
+    name: TKey,
+    options?: BarekeyGetOptions,
+  ): BarekeyPublicValueForKey<TKey>;
+  function get<const TKeys extends readonly BarekeyPublicKey[]>(
+    names: TKeys,
+    options?: BarekeyGetOptions,
+  ): BarekeyPublicValuesForKeys<TKeys>;
+  function get(nameOrNames: string | readonly string[], options?: BarekeyGetOptions): unknown {
+    if (Array.isArray(nameOrNames)) {
+      return readBarekeyValues(runtimeClient, nameOrNames, options);
+    }
+
+    return readBarekeyValue(runtimeClient, nameOrNames as string, options);
+  }
 
   return {
-    get(nameOrNames: string | readonly string[], options?: BarekeyGetOptions): unknown {
-      if (Array.isArray(nameOrNames)) {
-        return readBarekeyValues(client, nameOrNames, options);
-      }
-
-      return readBarekeyValue(client, nameOrNames as string, options);
-    },
-  } as BarekeyReactEnv;
+    get,
+  };
 }
