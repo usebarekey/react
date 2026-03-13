@@ -1,14 +1,13 @@
 import type {
-  BarekeyClient,
+  PublicBarekeyClient,
   BarekeyGetOptions,
   BarekeyResolvedRecord,
   BarekeyResolvedRecords,
-  PublicBarekeyClient,
-} from "@barekey/sdk";
+} from "@barekey/sdk/public";
 
 import { enforcePublicRecords } from "./leak-guard.js";
 
-type BarekeyReactClient = BarekeyClient | PublicBarekeyClient;
+type BarekeyReactClient = PublicBarekeyClient;
 
 type RuntimeBarekeyClient = {
   get(

@@ -1,4 +1,4 @@
-import type { BarekeyResolvedRecord } from "@barekey/sdk";
+import type { BarekeyResolvedRecord } from "@barekey/sdk/public";
 
 const OVERLAY_ID = "__barekey_private_variable_overlay";
 

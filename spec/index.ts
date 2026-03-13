@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { PublicBarekeyClient } from "@barekey/sdk";
+import { PublicBarekeyClient } from "@barekey/sdk/public";
 import { Component, createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
@@ -110,25 +110,11 @@ afterEach(() => {
 
 function renderWithClient(input: {
   client?: PublicBarekeyClient;
-  json?: {
-    organization: string;
-    project: string;
-    environment: string;
-  };
   children: ReturnType<typeof createElement>;
 }): ReturnType<typeof createElement> {
   if (input.client !== undefined) {
     return createElement(BarekeyProvider, {
       client: input.client,
-      fallback: createElement("span", null, "loading"),
-      children: input.children,
-    });
-  }
-
-  if (input.json !== undefined) {
-    return createElement(BarekeyProvider, {
-      json: input.json,
-      baseUrl: "https://api.example.test",
       fallback: createElement("span", null, "loading"),
       children: input.children,
     });
@@ -294,7 +280,7 @@ describe("@barekey/react", () => {
     });
   });
 
-  test("creates a public client from json config props", async () => {
+  test("supports reads through a caller-provided public client", async () => {
     (
       globalThis as typeof globalThis & {
         IS_REACT_ACT_ENVIRONMENT?: boolean;
@@ -326,15 +312,20 @@ describe("@barekey/react", () => {
       return createElement("span", null, env.get("PUBLIC_THEME"));
     }
 
+    const client = new PublicBarekeyClient({
+      json: {
+        organization: "acme",
+        project: "web-react-json",
+        environment: "production",
+      },
+      baseUrl: "https://api.example.test",
+    });
+
     let renderer!: ReactTestRenderer;
     await act(async () => {
       renderer = create(
         renderWithClient({
-          json: {
-            organization: "acme",
-            project: "web-react-json",
-            environment: "production",
-          },
+          client,
           children: createElement(Theme),
         }),
       );
@@ -448,7 +439,7 @@ describe("@barekey/react", () => {
       type: "span",
       props: {},
       children: [
-        "[barekey/react] useBarekey() must be used within <BarekeyProvider ...>. Wrap this subtree in BarekeyProvider and pass either a configured client or public Barekey scope props.",
+        "[barekey/react] useBarekey() must be used within <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
       ],
     });
   });

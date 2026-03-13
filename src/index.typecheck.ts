@@ -1,12 +1,22 @@
-import type { Env, Secret } from "@barekey/sdk";
+import { PublicBarekeyClient, type Env, type Secret } from "@barekey/sdk/public";
 import { createElement } from "react";
 
 import { BarekeyProvider, type BarekeyReactEnv } from "./index.js";
 
-declare module "@barekey/sdk" {
+declare module "@barekey/sdk/public" {
   interface BarekeyPublicGeneratedTypeMap {
-    PUBLIC_THEME: Env<Secret, "light" | "dark", never, "public">;
-    PUBLIC_TITLE: Env<Secret, string, never, "public">;
+    PUBLIC_THEME: Env<{
+      Mode: Secret;
+      Visibility: "public";
+      Rollout: never;
+      Type: "light" | "dark";
+    }>;
+    PUBLIC_TITLE: Env<{
+      Mode: Secret;
+      Visibility: "public";
+      Rollout: never;
+      Type: string;
+    }>;
   }
 }
 
@@ -24,37 +34,57 @@ const knownValue = env.get("PUBLIC_THEME");
 const unknownValue = env.get("RUNTIME_PUBLIC_KEY");
 const tupleValue = env.get(["PUBLIC_TITLE", "PUBLIC_THEME", "RUNTIME_PUBLIC_KEY"] as const);
 const arrayValue = env.get(["PUBLIC_TITLE", "RUNTIME_PUBLIC_KEY"]);
+declare const client: PublicBarekeyClient;
 createElement(BarekeyProvider, {
-  json: {
-    organization: "acme",
-    project: "web",
-    environment: "production",
-  },
-  fallback: null,
-});
-createElement(BarekeyProvider, {
-  organization: "acme",
-  project: "web",
-  environment: "production",
+  client,
   fallback: null,
 });
 
 type _knownValueStaysTyped = Assert<
-  IsEqual<typeof knownValue, Env<Secret, "light" | "dark", never, "public">>
+  IsEqual<
+    typeof knownValue,
+    Env<{
+      Mode: Secret;
+      Visibility: "public";
+      Rollout: never;
+      Type: "light" | "dark";
+    }>
+  >
 >;
 type _unknownValueFallsBackToUnknown = Assert<IsEqual<typeof unknownValue, unknown>>;
 type _tupleValueMapsKnownAndUnknownKeys = Assert<
   IsEqual<
     typeof tupleValue,
     readonly [
-      Env<Secret, string, never, "public">,
-      Env<Secret, "light" | "dark", never, "public">,
+      Env<{
+        Mode: Secret;
+        Visibility: "public";
+        Rollout: never;
+        Type: string;
+      }>,
+      Env<{
+        Mode: Secret;
+        Visibility: "public";
+        Rollout: never;
+        Type: "light" | "dark";
+      }>,
       unknown,
     ]
   >
 >;
 type _arrayValueFallsBackToTupleInference = Assert<
-  IsEqual<typeof arrayValue, readonly [Env<Secret, string, never, "public">, unknown]>
+  IsEqual<
+    typeof arrayValue,
+    readonly [
+      Env<{
+        Mode: Secret;
+        Visibility: "public";
+        Rollout: never;
+        Type: string;
+      }>,
+      unknown,
+    ]
+  >
 >;
 
 export {};
