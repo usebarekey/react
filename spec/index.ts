@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { PublicBarekeyClient } from "@barekey/sdk";
-import { Suspense, createElement } from "react";
+import { Component, createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
 import { BarekeyProvider, useBarekey } from "../src/index.js";
@@ -110,22 +110,59 @@ afterEach(() => {
 
 function renderWithClient(input: {
   client?: PublicBarekeyClient;
+  json?: {
+    organization: string;
+    project: string;
+    environment: string;
+  };
   children: ReturnType<typeof createElement>;
 }): ReturnType<typeof createElement> {
-  const wrappedChildren = input.client
-    ? createElement(BarekeyProvider, {
-        client: input.client,
-        children: input.children,
-      })
-    : input.children;
-
-  return createElement(
-    Suspense,
-    {
+  if (input.client !== undefined) {
+    return createElement(BarekeyProvider, {
+      client: input.client,
       fallback: createElement("span", null, "loading"),
-    },
-    wrappedChildren,
-  );
+      children: input.children,
+    });
+  }
+
+  if (input.json !== undefined) {
+    return createElement(BarekeyProvider, {
+      json: input.json,
+      baseUrl: "https://api.example.test",
+      fallback: createElement("span", null, "loading"),
+      children: input.children,
+    });
+  }
+
+  return input.children;
+}
+
+type CaptureBoundaryProps = {
+  children: ReturnType<typeof createElement>;
+};
+
+type CaptureBoundaryState = {
+  error: Error | null;
+};
+
+class CaptureBoundary extends Component<CaptureBoundaryProps, CaptureBoundaryState> {
+  override state: CaptureBoundaryState = {
+    error: null,
+  };
+
+  static getDerivedStateFromError(error: Error): CaptureBoundaryState {
+    return {
+      error,
+    };
+  }
+
+  override render() {
+    if (this.state.error !== null) {
+      return createElement("span", null, this.state.error.message);
+    }
+
+    return this.props.children;
+  }
 }
 
 describe("@barekey/react", () => {
@@ -257,6 +294,60 @@ describe("@barekey/react", () => {
     });
   });
 
+  test("creates a public client from json config props", async () => {
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT?: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    globalThis.fetch = (async (_input, init) => {
+      expect(JSON.parse(String(init?.body ?? ""))).toEqual({
+        orgSlug: "acme",
+        projectSlug: "web-react-json",
+        stageSlug: "production",
+        names: ["PUBLIC_THEME"],
+      });
+
+      return jsonResponse({
+        definitions: [
+          {
+            name: "PUBLIC_THEME",
+            kind: "secret",
+            declaredType: "string",
+            visibility: "public",
+            value: "dark",
+          },
+        ],
+      });
+    }) as typeof globalThis.fetch;
+
+    function Theme() {
+      const env = useBarekey();
+      return createElement("span", null, env.get("PUBLIC_THEME"));
+    }
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(
+        renderWithClient({
+          json: {
+            organization: "acme",
+            project: "web-react-json",
+            environment: "production",
+          },
+          children: createElement(Theme),
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(renderer.toJSON()).toEqual({
+      type: "span",
+      props: {},
+      children: ["dark"],
+    });
+  });
+
   test("shows the leak overlay for fresh and cached private records", async () => {
     (
       globalThis as typeof globalThis & {
@@ -330,5 +421,35 @@ describe("@barekey/react", () => {
 
     expect(fetchCount).toBe(1);
     expect(testDocument.getOverlay()?.innerHTML).toContain("LEAKED_SECRET");
+  });
+
+  test("throws a clear error when used outside BarekeyProvider", () => {
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT?: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+
+    function NakedUseBarekey() {
+      useBarekey();
+      return createElement("span", null, "unreachable");
+    }
+
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(
+        createElement(CaptureBoundary, {
+          children: createElement(NakedUseBarekey),
+        }),
+      );
+    });
+
+    expect(renderer.toJSON()).toEqual({
+      type: "span",
+      props: {},
+      children: [
+        "[barekey/react] useBarekey() must be used within <BarekeyProvider ...>. Wrap this subtree in BarekeyProvider and pass either a configured client or public Barekey scope props.",
+      ],
+    });
   });
 });

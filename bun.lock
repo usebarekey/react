@@ -5,7 +5,7 @@
     "": {
       "name": "@barekey/react",
       "dependencies": {
-        "@barekey/sdk": "^0.3.0",
+        "@barekey/sdk": "^0.3.1",
       },
       "devDependencies": {
         "@types/react": "^19.2.14",
@@ -21,7 +21,7 @@
     },
   },
   "packages": {
-    "@barekey/sdk": ["@barekey/sdk@0.3.0", "", {}, "sha512-DInoqUoxHXcVxoXMj+FWKQFQIErj6VnV7fPiP2g0/vIadwMDueh6S7DkgD6L0hpZvuB2qGghURjSnjr0+cQX/Q=="],
+    "@barekey/sdk": ["@barekey/sdk@0.3.1", "", {}, "sha512-IrVFvOzHYr/PVcW4VTJtbB05X9alQadrYNntQx3Uy3KUNs6IEI6CndV/roeT2A9nS7FxaHjfpOEBkEULpALPiA=="],
 
     "@types/react": ["@types/react@19.2.14", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w=="],
 

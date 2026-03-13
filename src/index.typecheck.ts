@@ -1,6 +1,7 @@
 import type { Env, Secret } from "@barekey/sdk";
+import { createElement } from "react";
 
-import type { BarekeyReactEnv } from "./index.js";
+import { BarekeyProvider, type BarekeyReactEnv } from "./index.js";
 
 declare module "@barekey/sdk" {
   interface BarekeyPublicGeneratedTypeMap {
@@ -23,6 +24,20 @@ const knownValue = env.get("PUBLIC_THEME");
 const unknownValue = env.get("RUNTIME_PUBLIC_KEY");
 const tupleValue = env.get(["PUBLIC_TITLE", "PUBLIC_THEME", "RUNTIME_PUBLIC_KEY"] as const);
 const arrayValue = env.get(["PUBLIC_TITLE", "RUNTIME_PUBLIC_KEY"]);
+createElement(BarekeyProvider, {
+  json: {
+    organization: "acme",
+    project: "web",
+    environment: "production",
+  },
+  fallback: null,
+});
+createElement(BarekeyProvider, {
+  organization: "acme",
+  project: "web",
+  environment: "production",
+  fallback: null,
+});
 
 type _knownValueStaysTyped = Assert<
   IsEqual<typeof knownValue, Env<Secret, "light" | "dark", never, "public">>
