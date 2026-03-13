@@ -1,9 +1,8 @@
 import {
   PublicBarekeyClient,
   type BarekeyGetOptions,
-  type BarekeyPublicKey,
-  type BarekeyPublicValueForKey,
-  type BarekeyPublicValuesForKeys,
+  type BarekeyLiteralString,
+  type BarekeyPublicGeneratedTypeMap,
 } from "@barekey/sdk/public";
 import {
   createContext,
@@ -18,15 +17,29 @@ import { readBarekeyValue, readBarekeyValues } from "./cache.js";
 
 export type BarekeyReactClient = PublicBarekeyClient;
 
+type BarekeyReactKnownKey = Extract<keyof BarekeyPublicGeneratedTypeMap, string>;
+
+type BarekeyReactKey = BarekeyReactKnownKey | BarekeyLiteralString;
+
+type BarekeyReactValueForKey<TKey extends string> = TKey extends BarekeyReactKnownKey
+  ? BarekeyPublicGeneratedTypeMap[TKey]
+  : unknown;
+
+type BarekeyReactValuesForKeys<TKeys extends readonly string[]> = {
+  [TIndex in keyof TKeys]: TKeys[TIndex] extends string
+    ? BarekeyReactValueForKey<TKeys[TIndex]>
+    : never;
+};
+
 export type BarekeyReactGet = {
-  <TKey extends BarekeyPublicKey>(
+  <TKey extends BarekeyReactKey>(
     name: TKey,
     options?: BarekeyGetOptions,
-  ): BarekeyPublicValueForKey<TKey>;
-  <const TKeys extends readonly BarekeyPublicKey[]>(
+  ): BarekeyReactValueForKey<TKey>;
+  <const TKeys extends readonly BarekeyReactKey[]>(
     names: TKeys,
     options?: BarekeyGetOptions,
-  ): BarekeyPublicValuesForKeys<TKeys>;
+  ): BarekeyReactValuesForKeys<TKeys>;
 };
 
 export type BarekeyReactEnv = {
@@ -60,14 +73,14 @@ export function useBarekey() {
   }
   const runtimeClient = client;
 
-  function get<TKey extends BarekeyPublicKey>(
+  function get<TKey extends BarekeyReactKey>(
     name: TKey,
     options?: BarekeyGetOptions,
-  ): BarekeyPublicValueForKey<TKey>;
-  function get<const TKeys extends readonly BarekeyPublicKey[]>(
+  ): BarekeyReactValueForKey<TKey>;
+  function get<const TKeys extends readonly BarekeyReactKey[]>(
     names: TKeys,
     options?: BarekeyGetOptions,
-  ): BarekeyPublicValuesForKeys<TKeys>;
+  ): BarekeyReactValuesForKeys<TKeys>;
   function get(nameOrNames: string | readonly string[], options?: BarekeyGetOptions): unknown {
     if (Array.isArray(nameOrNames)) {
       return readBarekeyValues(runtimeClient, nameOrNames, options);
