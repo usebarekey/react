@@ -4,10 +4,8 @@
   "workspaces": {
     "": {
       "name": "@barekey/react",
-      "dependencies": {
-        "@barekey/sdk": "^0.4.3",
-      },
       "devDependencies": {
+        "@barekey/sdk": "^0.4.4",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "react": "^19.2.4",
@@ -15,13 +13,14 @@
         "react-test-renderer": "^19.2.4",
       },
       "peerDependencies": {
+        "@barekey/sdk": "^0.4.4",
         "react": ">=18",
         "react-dom": ">=18",
       },
     },
   },
   "packages": {
-    "@barekey/sdk": ["@barekey/sdk@0.4.3", "", {}, "sha512-xXBzLzDUlDl0iD/5rGMNeFrmPzRmAlXCsyfP5KyjBprP68quZoucMo3ryB18Mfw6V/yeJzzUN1yO5tlrHzDL/Q=="],
+    "@barekey/sdk": ["@barekey/sdk@0.4.4", "", {}, "sha512-cnEGQfH4+Dt42Ga52KOn7pcVe8Vp0YBdkmfGpsCQfS4HMykLg0XDrDDLFMOCkAJK1f/Ij0wR8Mf4dM2Mu6tNWQ=="],
 
     "@types/react": ["@types/react@19.2.14", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w=="],
 
