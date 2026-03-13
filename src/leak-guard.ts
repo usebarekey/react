@@ -4,17 +4,28 @@ const OVERLAY_ID = "__barekey_private_variable_overlay";
 
 const leakedNames = new Set<string>();
 
+function readNodeEnv(): string | undefined {
+  if (typeof globalThis !== "object" || globalThis === null || !("process" in globalThis)) {
+    return undefined;
+  }
+
+  const runtimeProcess = (
+    globalThis as typeof globalThis & {
+      process?: {
+        env?: Record<string, string | undefined>;
+      };
+    }
+  ).process;
+
+  return runtimeProcess?.env?.NODE_ENV;
+}
+
 function isBrowserDevelopmentRuntime(): boolean {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return false;
   }
 
-  if (
-    typeof process !== "undefined" &&
-    typeof process.env === "object" &&
-    process.env !== null &&
-    process.env.NODE_ENV === "production"
-  ) {
+  if (readNodeEnv() === "production") {
     return false;
   }
 
