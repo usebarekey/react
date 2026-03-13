@@ -1,0 +1,52 @@
+{
+  "name": "@barekey/react",
+  "version": "0.1.0",
+  "description": "React bindings for Barekey",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test ./spec/index.ts"
+  },
+  "dependencies": {
+    "@barekey/sdk": "file:../sdk"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-test-renderer": "^19.2.4"
+  },
+  "packageManager": "bun@1.2.22",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usebarekey/react.git"
+  },
+  "homepage": "https://github.com/usebarekey/react#readme",
+  "bugs": {
+    "url": "https://github.com/usebarekey/react/issues"
+  }
+}
