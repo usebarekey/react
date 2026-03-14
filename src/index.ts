@@ -15,42 +15,31 @@ import { readBarekeyValue, readBarekeyValues } from "./cache.js";
 
 export type BarekeyReactClient = PublicBarekeyClient;
 
+type BarekeyReactKnownKey = Extract<
+  keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap,
+  string
+>;
+
+type BarekeyReactAnyKey =
+  | import("@barekey/sdk/public").BarekeyLiteralString
+  | BarekeyReactKnownKey;
+
+type BarekeyReactValueForKey<TKey extends BarekeyReactAnyKey> = TKey extends BarekeyReactKnownKey
+  ? import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap[TKey]
+  : unknown;
+
+type BarekeyReactValuesForKeys<TKeys extends readonly BarekeyReactAnyKey[]> = {
+  [TIndex in keyof TKeys]: TKeys[TIndex] extends BarekeyReactAnyKey
+    ? BarekeyReactValueForKey<TKeys[TIndex]>
+    : never;
+};
+
 export type BarekeyReactGet = {
-  <
-    TKey extends
-      | import("@barekey/sdk/public").BarekeyLiteralString
-      | Extract<keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap, string>,
-  >(
-    name: TKey,
-    options?: BarekeyGetOptions,
-  ): TKey extends Extract<
-    keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap,
-    string
-  >
-    ? import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap[TKey]
-    : unknown;
-  <
-    const TKeys extends readonly (
-      | import("@barekey/sdk/public").BarekeyLiteralString
-      | Extract<keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap, string>
-    )[],
-  >(
+  <TKey extends BarekeyReactAnyKey>(name: TKey, options?: BarekeyGetOptions): BarekeyReactValueForKey<TKey>;
+  <const TKeys extends readonly BarekeyReactAnyKey[]>(
     names: TKeys,
     options?: BarekeyGetOptions,
-  ): {
-    [TIndex in keyof TKeys]: TKeys[TIndex] extends string
-      ? TKeys[TIndex] extends infer TKey
-        ? TKey extends TKeys[TIndex]
-          ? TKey extends Extract<
-              keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap,
-              string
-            >
-            ? import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap[TKey]
-            : unknown
-          : never
-        : never
-      : never;
-  };
+  ): BarekeyReactValuesForKeys<TKeys>;
 };
 
 export type BarekeyReactEnv = {
@@ -84,41 +73,14 @@ export function useBarekey() {
   }
   const runtimeClient = client;
 
-  function get<
-    TKey extends
-      | import("@barekey/sdk/public").BarekeyLiteralString
-      | Extract<keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap, string>,
-  >(
+  function get<TKey extends BarekeyReactAnyKey>(
     name: TKey,
     options?: BarekeyGetOptions,
-  ): TKey extends Extract<
-    keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap,
-    string
-  >
-    ? import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap[TKey]
-    : unknown;
-  function get<
-    const TKeys extends readonly (
-      | import("@barekey/sdk/public").BarekeyLiteralString
-      | Extract<keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap, string>
-    )[],
-  >(
+  ): BarekeyReactValueForKey<TKey>;
+  function get<const TKeys extends readonly BarekeyReactAnyKey[]>(
     names: TKeys,
     options?: BarekeyGetOptions,
-  ): {
-    [TIndex in keyof TKeys]: TKeys[TIndex] extends string
-      ? TKeys[TIndex] extends infer TKey
-        ? TKey extends TKeys[TIndex]
-          ? TKey extends Extract<
-              keyof import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap,
-              string
-            >
-            ? import("@barekey/sdk/public").BarekeyPublicGeneratedTypeMap[TKey]
-            : unknown
-          : never
-        : never
-      : never;
-  };
+  ): BarekeyReactValuesForKeys<TKeys>;
   function get(nameOrNames: string | readonly string[], options?: BarekeyGetOptions): unknown {
     if (Array.isArray(nameOrNames)) {
       return readBarekeyValues(runtimeClient, nameOrNames, options);
