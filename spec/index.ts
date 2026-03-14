@@ -361,7 +361,7 @@ describe("@barekey/react", () => {
       return jsonResponse({
         definitions: [
           {
-            name: "LEAKED_SECRET",
+            name: '<img src=x onerror=alert("xss")>',
             kind: "secret",
             declaredType: "string",
             visibility: "private",
@@ -380,7 +380,7 @@ describe("@barekey/react", () => {
 
     function LeakyValue() {
       const env = useBarekey();
-      return createElement("span", null, env.get("LEAKED_SECRET"));
+      return createElement("span", null, env.get('<img src=x onerror=alert("xss")>'));
     }
 
     let renderer!: ReactTestRenderer;
@@ -395,8 +395,9 @@ describe("@barekey/react", () => {
     });
 
     expect(fetchCount).toBe(1);
-    expect(testDocument.getOverlay()?.innerHTML).toContain("LEAKED_SECRET");
-    expect(consoleErrors.some((message) => message.includes("LEAKED_SECRET"))).toBeTrue();
+    expect(testDocument.getOverlay()?.innerHTML).toContain("&lt;img src=x onerror=alert(&quot;xss&quot;)&gt;");
+    expect(testDocument.getOverlay()?.innerHTML).not.toContain('<img src=x onerror=alert("xss")>');
+    expect(consoleErrors.some((message) => message.includes('<img src=x onerror=alert("xss")>'))).toBeTrue();
 
     resetLeakGuardForTests();
 
@@ -411,7 +412,7 @@ describe("@barekey/react", () => {
     });
 
     expect(fetchCount).toBe(1);
-    expect(testDocument.getOverlay()?.innerHTML).toContain("LEAKED_SECRET");
+    expect(testDocument.getOverlay()?.innerHTML).toContain("&lt;img src=x onerror=alert(&quot;xss&quot;)&gt;");
   });
 
   test("throws a clear error when used outside BarekeyProvider", () => {

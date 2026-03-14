@@ -32,6 +32,15 @@ function isBrowserDevelopmentRuntime(): boolean {
   return true;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function renderOverlay(): void {
   if (typeof document === "undefined" || document.body === null) {
     return;
@@ -62,12 +71,13 @@ function renderOverlay(): void {
   }
 
   const orderedNames = [...leakedNames].sort();
+  const escapedNames = orderedNames.map((name) => escapeHtml(name));
   overlay.innerHTML = [
     '<div style="max-width:900px;border:1px solid rgba(248,113,113,0.65);border-radius:20px;background:#111827;padding:28px;box-shadow:0 20px 80px rgba(0,0,0,0.45)">',
     '<div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:#fca5a5;margin-bottom:12px">Barekey Leak Guard</div>',
     '<div style="font-size:28px;line-height:1.2;font-weight:700;margin-bottom:14px">A private Barekey variable reached the browser.</div>',
     '<div style="font-size:16px;line-height:1.6;color:#cbd5e1;margin-bottom:18px">This usually means a server-only client or private variable was exposed through a client-side React path.</div>',
-    `<div style="font-size:15px;line-height:1.7;background:#0f172a;border-radius:14px;padding:16px;border:1px solid rgba(148,163,184,0.25)">Leaked variables:\n${orderedNames.join("\n")}</div>`,
+    `<div style="font-size:15px;line-height:1.7;background:#0f172a;border-radius:14px;padding:16px;border:1px solid rgba(148,163,184,0.25)">Leaked variables:\n${escapedNames.join("\n")}</div>`,
     "</div>",
   ].join("");
 }
