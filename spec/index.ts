@@ -3,7 +3,7 @@ import { PublicBarekeyClient } from "@barekey/sdk/public";
 import { Component, createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
-import { BarekeyProvider, useBarekey } from "../src/index.js";
+import { BarekeyProvider, type BarekeyReactEnv, useBarekey } from "../src/index.js";
 import { resetBarekeyReactCacheForTests } from "../src/cache.js";
 import { resetLeakGuardForTests } from "../src/leak-guard.js";
 
@@ -280,7 +280,7 @@ describe("@barekey/react", () => {
     });
   });
 
-  test("supports reads through a caller-provided public client", async () => {
+  test("supports reads through a caller-provided public client without a provider", async () => {
     (
       globalThis as typeof globalThis & {
         IS_REACT_ACT_ENVIRONMENT?: boolean;
@@ -308,7 +308,7 @@ describe("@barekey/react", () => {
     }) as typeof globalThis.fetch;
 
     function Theme() {
-      const env = useBarekey();
+      const env = useBarekey(client);
       return createElement("span", null, env.get("PUBLIC_THEME"));
     }
 
@@ -325,7 +325,6 @@ describe("@barekey/react", () => {
     await act(async () => {
       renderer = create(
         renderWithClient({
-          client,
           children: createElement(Theme),
         }),
       );
@@ -415,7 +414,103 @@ describe("@barekey/react", () => {
     expect(testDocument.getOverlay()?.innerHTML).toContain("&lt;img src=x onerror=alert(&quot;xss&quot;)&gt;");
   });
 
-  test("throws a clear error when used outside BarekeyProvider", () => {
+  test("prefers an explicit client over provider context", async () => {
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT?: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    globalThis.fetch = (async (_input, init) => {
+      expect(JSON.parse(String(init?.body ?? ""))).toEqual({
+        orgSlug: "acme",
+        projectSlug: "web-react-explicit",
+        stageSlug: "production",
+        names: ["PUBLIC_THEME"],
+      });
+
+      return jsonResponse({
+        definitions: [
+          {
+            name: "PUBLIC_THEME",
+            kind: "secret",
+            declaredType: "string",
+            visibility: "public",
+            value: "dark",
+          },
+        ],
+      });
+    }) as typeof globalThis.fetch;
+
+    const providerClient = new PublicBarekeyClient({
+      organization: "acme",
+      project: "web-react-provider",
+      environment: "production",
+      baseUrl: "https://api.example.test",
+    });
+    const explicitClient = new PublicBarekeyClient({
+      organization: "acme",
+      project: "web-react-explicit",
+      environment: "production",
+      baseUrl: "https://api.example.test",
+    });
+
+    function Theme() {
+      const env = useBarekey(explicitClient);
+      return createElement("span", null, env.get("PUBLIC_THEME"));
+    }
+
+    let renderer!: ReactTestRenderer;
+    await act(async () => {
+      renderer = create(
+        renderWithClient({
+          client: providerClient,
+          children: createElement(Theme),
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(renderer.toJSON()).toEqual({
+      type: "span",
+      props: {},
+      children: ["dark"],
+    });
+  });
+
+  test("returns a stable env object when the resolved client stays the same", () => {
+    (
+      globalThis as typeof globalThis & {
+        IS_REACT_ACT_ENVIRONMENT?: boolean;
+      }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+
+    const client = new PublicBarekeyClient({
+      organization: "acme",
+      project: "web-react-stable-env",
+      environment: "production",
+      baseUrl: "https://api.example.test",
+    });
+    const seen: Array<BarekeyReactEnv> = [];
+
+    function StableEnvProbe() {
+      const env = useBarekey(client);
+      seen.push(env);
+      return createElement("span", null, "ok");
+    }
+
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = create(createElement(StableEnvProbe));
+    });
+    act(() => {
+      renderer.update(createElement(StableEnvProbe));
+    });
+
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toBe(seen[1]);
+  });
+
+  test("throws a clear error when no client is provided and no provider exists", () => {
     (
       globalThis as typeof globalThis & {
         IS_REACT_ACT_ENVIRONMENT?: boolean;
@@ -440,7 +535,7 @@ describe("@barekey/react", () => {
       type: "span",
       props: {},
       children: [
-        "[barekey/react] useBarekey() must be used within <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
+        "[barekey/react] useBarekey() requires a PublicBarekeyClient argument or a parent <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
       ],
     });
   });
