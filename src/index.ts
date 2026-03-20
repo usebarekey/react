@@ -7,6 +7,7 @@ import {
   createElement,
   Suspense,
   useContext,
+  useMemo,
   type ReactElement,
   type ReactNode,
 } from "react";
@@ -54,25 +55,7 @@ export type BarekeyProviderProps = {
 
 const BarekeyContext = createContext<BarekeyReactClient | null>(null);
 
-export function BarekeyProvider(props: BarekeyProviderProps): ReactElement {
-  return createElement(BarekeyContext.Provider, {
-    value: props.client,
-    children: createElement(Suspense, {
-      fallback: props.fallback ?? null,
-      children: props.children,
-    }),
-  });
-}
-
-export function useBarekey() {
-  const client = useContext(BarekeyContext);
-  if (client === null) {
-    throw new Error(
-      "[barekey/react] useBarekey() must be used within <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
-    );
-  }
-  const runtimeClient = client;
-
+function createBarekeyEnv(runtimeClient: BarekeyReactClient): BarekeyReactEnv {
   function get<TKey extends BarekeyReactAnyKey>(
     name: TKey,
     options?: BarekeyGetOptions,
@@ -92,4 +75,26 @@ export function useBarekey() {
   return {
     get,
   };
+}
+
+export function BarekeyProvider(props: BarekeyProviderProps): ReactElement {
+  return createElement(BarekeyContext.Provider, {
+    value: props.client,
+    children: createElement(Suspense, {
+      fallback: props.fallback ?? null,
+      children: props.children,
+    }),
+  });
+}
+
+export function useBarekey(client?: BarekeyReactClient) {
+  const contextClient = useContext(BarekeyContext);
+  const resolvedClient = client ?? contextClient;
+  if (resolvedClient === null) {
+    throw new Error(
+      "[barekey/react] useBarekey() requires a PublicBarekeyClient argument or a parent <BarekeyProvider client={new PublicBarekeyClient(...)} ...>.",
+    );
+  }
+  const runtimeClient = resolvedClient;
+  return useMemo(() => createBarekeyEnv(runtimeClient), [runtimeClient]);
 }
